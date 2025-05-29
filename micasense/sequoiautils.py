@@ -29,14 +29,14 @@ def sequoia_irradiance(meta, imageRaw, vignetteCorrection=True):
         V = ''
 
     # get radiometric calibration factors (Sequoia Firmware Version 1.2.1 or later)
-    sensorModel = meta.get_item('XMP:SensorModel').split(',')
+    sensorModel = meta['XMP:SensorModel'].split(',')
     A = float(sensorModel[0])
     B = float(sensorModel[1])
     C = float(sensorModel[2])
 
-    fNumber = meta.get_item('EXIF:FNumber')
-    expTime = meta.get_item('EXIF:ExposureTime')
-    gain = meta.get_item('EXIF:ISO')
+    fNumber = meta['EXIF:FNumber']
+    expTime = meta['EXIF:ExposureTime']
+    gain = meta['EXIF:ISO']
 
     # make the calculation (for details, see application note: SEQ AN 01)
     I = fNumber ** 2 * (imageRaw - B) / (A * expTime * gain + C)
@@ -50,8 +50,8 @@ def sequoia_irradiance(meta, imageRaw, vignetteCorrection=True):
 # https://forum.developer.parrot.com/t/vignetting-correction-sample-code/5614
 
 def vignette_correction(meta, xDim, yDim):
-    polynomial2DName = meta.get_item('XMP:VignettingPolynomial2DName')
-    polynomial2D = meta.get_item('XMP:VignettingPolynomial2D')
+    polynomial2DName = meta['XMP:VignettingPolynomial2DName']
+    polynomial2D = meta['XMP:VignettingPolynomial2D']
     poly = build_powers_coefficients(polynomial2DName, polynomial2D)
     vignette_factor = np.ones((yDim, xDim), dtype=np.float32)
     for y in range(0, yDim):
@@ -91,7 +91,7 @@ def GetTimefromStart(meta):
     return duration
 
 def GetSunIrradiance(meta):
-    encoded = meta.get_item('XMP:IrradianceList')
+    encoded = meta['XMP:IrradianceList']
     # decode the string
     data = base64.standard_b64decode(encoded)
 
