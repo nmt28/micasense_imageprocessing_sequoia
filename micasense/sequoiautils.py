@@ -82,7 +82,7 @@ def vignetting(powers_coefficients, x, y):
 # The code has been modified by Rasmus Fenger-Nielsen
 
 def GetTimefromStart(meta):
-    Time = datetime.datetime.strptime(meta.get_item('Composite:SubSecCreateDate'), "%Y:%m:%d %H:%M:%S.%f")
+    Time = datetime.datetime.strptime(meta['Composite:SubSecCreateDate'], "%Y:%m:%d %H:%M:%S.%f")
     Time_UTC = pytz.utc.localize(Time, is_dst=False)
     duration = datetime.timedelta(hours=Time_UTC.hour,
                                   minutes=Time_UTC.minute,
@@ -128,27 +128,27 @@ def GetSunIrradiance(meta):
 
 def correct_lens_distortion_sequoia(meta, image):
     # get lens distortion parameters
-    FisheyePoly = np.array(meta.get_item('XMP:FisheyePolynomial').split(',')).astype(np.float)
+    FisheyePoly = np.array(meta['XMP:FisheyePolynomial'].split(',')).astype(float)
     p0 = FisheyePoly[0]
     p1 = FisheyePoly[1]
     p2 = FisheyePoly[2]
     p3 = FisheyePoly[3]
 
-    FisheyeAffineMat = np.array(meta.get_item('XMP:FisheyeAffineMatrix').split(',')).astype(np.float)
+    FisheyeAffineMat = np.array(meta['XMP:FisheyeAffineMatrix'].split(',')).astype(float)
     C = FisheyeAffineMat[0]
     D = FisheyeAffineMat[2]
     E = FisheyeAffineMat[1]
     F = FisheyeAffineMat[3]
 
     # get focal length and image dimensions
-    FocalLength = float(meta.get_item('EXIF:FocalLength'))
+    FocalLength = float(meta['EXIF:FocalLength'])
     h, w = image.shape
 
     # get the two principal points
-    pp = np.array(meta.get_item('XMP:PrincipalPoint').split(',')).astype(np.float)
+    pp = np.array(meta['XMP:PrincipalPoint'].split(',')).astype(float)
     # values in pp and focallength are in [mm] and need to be rescaled to pixels
-    FocalPlaneXResolution = float(meta.get_item('EXIF:FocalPlaneXResolution'))
-    FocalPlaneYResolution = float(meta.get_item('EXIF:FocalPlaneYResolution'))
+    FocalPlaneXResolution = float(meta['EXIF:FocalPlaneXResolution'])
+    FocalPlaneYResolution = float(meta['EXIF:FocalPlaneYResolution'])
     cX = pp[0]*FocalPlaneXResolution
     cY = pp[1]*FocalPlaneYResolution
     fx = FocalLength * FocalPlaneXResolution
