@@ -35,20 +35,20 @@ def raw_image_to_radiance(meta, imageRaw):
     #  get radiometric calibration factors
 
     # radiometric sensitivity
-    a1, a2, a3 = meta.get_item('XMP:RadiometricCalibration')
+    a1, a2, a3 = meta['XMP:RadiometricCalibration']
     a1 = float(a1)
     a2 = float(a2)
     a3 = float(a3)
 
     # get dark current pixel values
     # get number of stored values
-    black_levels = [float(val) for val in meta.get_item('EXIF:BlackLevel').split(' ')]
+    black_levels = [float(val) for val in meta['EXIF:BlackLevel'].split(' ')]
     blackLevel = np.array(black_levels)
     darkLevel = blackLevel.mean()
 
     #get exposure time & gain (gain = ISO/100)
-    exposureTime = float(meta.get_item('EXIF:ExposureTime'))
-    gain = float(meta.get_item('EXIF:ISOSpeed'))/100.0 
+    exposureTime = float(meta['EXIF:ExposureTime'])
+    gain = float(meta['EXIF:ISOSpeed'])/100.0 
 
 
     # apply image correction methods to raw image
@@ -71,7 +71,7 @@ def raw_image_to_radiance(meta, imageRaw):
     # multiply with the radiometric calibration coefficient
     # need to normalize by 2^16 for 16 bit images
     # because coefficients are scaled to work with input values of max 1.0
-    bitsPerPixel = meta.get_item('EXIF:BitsPerSample')
+    bitsPerPixel = meta['EXIF:BitsPerSample']
     bitDepthMax = float(2**bitsPerPixel)
     radianceImage = L.astype(float)/(gain * exposureTime)*a1/bitDepthMax
     
@@ -81,18 +81,22 @@ def raw_image_to_radiance(meta, imageRaw):
 
 def vignette_map(meta, xDim, yDim):
     # get vignette center
-    xVignette = float(meta.get_item('XMP:VignettingCenter', 0))
-    yVignette = float(meta.get_item('XMP:VignettingCenter', 1))
+    xVignette = float(meta['XMP:VignettingCenter'][0])
+    yVignette = float(meta['XMP:VignettingCenter'][1])
 
     # get vignette polynomial
-    NvignettePoly = meta.size('XMP:VignettingPolynomial')
-    vignettePolyList = [float(meta.get_item('XMP:VignettingPolynomial', i)) for i in range(NvignettePoly)]
 
-    # reverse list and append 1., so that we can call with numpy polyval
+    NvignettePoly = len(meta['XMP:VignettingPolynomial'])
+
+    #vignettePolyList = [float(meta.get_item('XMP:VignettingPolynomial', i)) for i in range(NvignettePoly)]
+    vignettePolyList = meta['XMP:VignettingPolynomial']
+    
+    # reverse list
     vignettePolyList.reverse()
+    # append 1., so that we can call with numpy polyval
     vignettePolyList.append(1.)
-    vignettePoly = np.array(vignettePolyList)
 
+    vignettePoly = np.array(vignettePolyList).astype(float)
     # perform vignette correction
     # get coordinate grid across image
     x, y = np.meshgrid(np.arange(xDim), np.arange(yDim))
@@ -107,23 +111,23 @@ def vignette_map(meta, xDim, yDim):
     # compute the vignette polynomial for each distance - we divide by the polynomial so that the
     # corrected image is image_corrected = image_original * vignetteCorrection
     vignette = 1./np.polyval(vignettePoly, r)
-    return vignette, x, y
+    return np.asarray(vignette), x, y
 
 def correct_lens_distortion(meta, image):
     # get lens distortion parameters
-    Ndistortion = meta.size('XMP:PerspectiveDistortion')
-    distortionParameters = np.array([float(meta.get_item('XMP:PerspectiveDistortion', i)) for i in range(Ndistortion)])
+    Ndistortion = len(meta['XMP:PerspectiveDistortion'])
+    distortionParameters = np.array(meta['XMP:PerspectiveDistortion']).astype(float)
     #get the two principal points
-    pp = np.array(meta.get_item('XMP:PrincipalPoint').split(',')).astype(np.float)
+    pp = np.array(meta['XMP:PrincipalPoint'].split(',')).astype(float)
     # values in pp are in [mm] and need to be rescaled to pixels
-    FocalPlaneXResolution = float(meta.get_item('EXIF:FocalPlaneXResolution'))
-    FocalPlaneYResolution = float(meta.get_item('EXIF:FocalPlaneYResolution'))
+    FocalPlaneXResolution = float(meta['EXIF:FocalPlaneXResolution'])
+    FocalPlaneYResolution = float(meta['EXIF:FocalPlaneYResolution'])
 
     cX = pp[0] * FocalPlaneXResolution
     cY = pp[1] * FocalPlaneYResolution
     #k = distortionParameters[0:3] # seperate out k -parameters
     #p = distortionParameters[3::] # separate out p - parameters
-    fx = fy = float(meta.get_item('XMP:PerspectiveFocalLength'))
+    fx = fy = float(meta['XMP:PerspectiveFocalLength'])
     # apply perspective distortion
 
     h, w = image.shape
